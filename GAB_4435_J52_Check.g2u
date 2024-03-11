@@ -1,0 +1,145 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+'Pull the last J52 transaction from Inv History for all Parts
+
+V.Local.sSQL.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sMsg.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sPart2.Declare(String)
+V.Local.sLocation.Declare(String)
+V.Local.sDateHistory.Declare(String)
+V.Local.fOldInvCost.Declare(Float)
+V.Local.fNewInvCost.Declare(Float)
+V.Local.fCost.Declare(Float)
+V.Local.iPercentage.Declare(Long)
+V.Local.dDate.Declare(Date)
+V.Local.iRet.Declare(Long)
+V.Local.iCnt.Declare(Long)
+
+F.ODBC.Connection!con.OpenCompanyConnection(600)
+
+F.Intrinsic.Control.CallSub(Createtable)
+
+'F.ODBC.Connection!con.Execute("DELETE FROM GAB_4435_J52_CHECK;")
+F.ODBC.Connection!con.ExecuteAndReturn("SELECT COUNT(PART) AS CNT FROM GAB_4435_J52_CHECK;",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet.Float,=,0)
+	'Add ALL records
+	F.Intrinsic.Date.DateAdd("YYYY",-2,V.Ambient.Date,V.Local.dDate)
+	F.Intrinsic.String.Build("SELECT DISTINCT PART, LOCATION FROM V_INVENTORY_HIST WHERE CODE_TRANSACTION = 'J52' AND DATE_HISTORY >= '{0}';",V.Local.dDate.PervasiveDate,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("dtParts","con",V.Local.sSQL,True)
+	V.Local.iPercentage.Set(V.DataTable.dtParts.RowCount)
+	F.Intrinsic.UI.InvokeWaitDialog("Loading J52 Records....","Loading Data...")
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.dtParts.RowCount--,1)
+		F.Intrinsic.UI.ChangeWaitStatus("Loading J52 Records....",V.Local.iCnt,0,V.Local.iPercentage)
+		V.Local.sPart.Set(V.DataTable.dtParts(V.Local.iCnt).PART!FieldValTrim)
+		F.Intrinsic.String.Replace(V.Local.sPart,"'","''",V.Local.sPart2)
+		V.Local.sLocation.Set(V.DataTable.dtParts(V.Local.iCnt).LOCATION!FieldValTrim)
+		F.Intrinsic.String.Build("SELECT TOP 1 PART,LOCATION,DATE_HISTORY,OLD_INV_COST,NEW_INV_COST,COST FROM V_INVENTORY_HIST WHERE CODE_TRANSACTION = 'J52' AND DATE_HISTORY >= '{2}' AND PART = '{0}' AND LOCATION = '{1}' ORDER BY DATE_HISTORY DESC;",V.Local.sPart2,V.Local.sLocation,V.Local.dDate.PervasiveDate,V.Local.sSQL)
+		F.Data.DataTable.CreateFromSQL("dtHist","con",V.Local.sSQL,True)
+		F.Intrinsic.Control.If(V.DataTable.dtHist.RowCount,<>,0)
+			V.Local.sDateHistory.Set(V.DataTable.dtHist(0).DATE_HISTORY!FieldValPervasiveDate)
+			V.Local.fOldInvCost.Set(V.DataTable.dtHist(0).OLD_INV_COST!FieldValFloat)
+			V.Local.fNewInvCost.Set(V.DataTable.dtHist(0).NEW_INV_COST!FieldValFloat)
+			V.Local.fCost.Set(V.DataTable.dtHist(0).COST!FieldValFloat)
+			F.Intrinsic.String.Build("SELECT * FROM GAB_4435_J52_CHECK WHERE PART = '{0}' AND LOCATION = '{1}';",V.Local.sPart2,V.Local.sLocation,V.Local.sSQL)
+			F.Data.DataTable.CreateFromSQL("dtJ52","con",V.Local.sSQL,True)
+			F.Data.DataTable.AddRow("dtJ52","PART",V.Local.sPart,"LOCATION",V.Local.sLocation,"DATE_HISTORY",V.Local.sDateHistory,"OLD_INV_COST",V.Local.fOldInvCost,"NEW_INV_COST",V.Local.fNewInvCost,"COST",V.Local.fCost)
+			F.Data.DataTable.SaveToDB("dtJ52","con","GAB_4435_J52_CHECK","PART*!*LOCATION")
+			F.Data.DataTable.Close("dtJ52")
+		F.Intrinsic.Control.EndIf
+		F.Data.DataTable.Close("dtHist")
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Data.DataTable.Close("dtParts")
+F.Intrinsic.Control.Else
+	'Add Only New records between a date range
+	F.Intrinsic.Date.DateAdd("YYYY",-2,V.Ambient.Date,V.Local.dDate)
+	F.Data.DataTable.CreateFromSQL("dtDate","con","SELECT TOP 1 DATE_HISTORY FROM GAB_4435_J52_CHECK ORDER BY DATE_HISTORY DESC;",True)
+	V.Local.dDate.Set(V.DataTable.dtDate(0).DATE_HISTORY!FieldVal)
+	F.Data.DataTable.Close("dtDate")
+	F.Intrinsic.String.Build("SELECT DISTINCT PART, LOCATION FROM V_INVENTORY_HIST WHERE CODE_TRANSACTION = 'J52' AND DATE_HISTORY >= '{0}';",V.Local.dDate.PervasiveDate,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("dtParts","con",V.Local.sSQL,True)
+	V.Local.iPercentage.Set(V.DataTable.dtParts.RowCount)
+	F.Intrinsic.UI.InvokeWaitDialog("Loading J52 Records....","Loading Data...")
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.dtParts.RowCount--,1)
+		F.Intrinsic.UI.ChangeWaitStatus("Loading J52 Records....",V.Local.iCnt,0,V.Local.iPercentage)
+		V.Local.sPart.Set(V.DataTable.dtParts(V.Local.iCnt).PART!FieldValTrim)
+		F.Intrinsic.String.Replace(V.Local.sPart,"'","''",V.Local.sPart2)
+		V.Local.sLocation.Set(V.DataTable.dtParts(V.Local.iCnt).LOCATION!FieldValTrim)
+		F.Intrinsic.String.Build("SELECT TOP 1 PART,LOCATION,DATE_HISTORY,OLD_INV_COST,NEW_INV_COST,COST FROM V_INVENTORY_HIST WHERE CODE_TRANSACTION = 'J52' AND DATE_HISTORY >= '{2}' AND PART = '{0}' AND LOCATION = '{1}' ORDER BY DATE_HISTORY DESC;",V.Local.sPart2,V.Local.sLocation,V.Local.dDate.PervasiveDate,V.Local.sSQL)
+		F.Data.DataTable.CreateFromSQL("dtHist","con",V.Local.sSQL,True)
+		F.Intrinsic.Control.If(V.DataTable.dtHist.RowCount,<>,0)
+			V.Local.sDateHistory.Set(V.DataTable.dtHist(0).DATE_HISTORY!FieldValPervasiveDate)
+			V.Local.fOldInvCost.Set(V.DataTable.dtHist(0).OLD_INV_COST!FieldValFloat)
+			V.Local.fNewInvCost.Set(V.DataTable.dtHist(0).NEW_INV_COST!FieldValFloat)
+			V.Local.fCost.Set(V.DataTable.dtHist(0).COST!FieldValFloat)
+			F.Intrinsic.String.Build("SELECT * FROM GAB_4435_J52_CHECK WHERE PART = '{0}' AND LOCATION = '{1}';",V.Local.sPart2,V.Local.sLocation,V.Local.sSQL)
+			F.Data.DataTable.CreateFromSQL("dtJ52","con",V.Local.sSQL,True)
+			F.Intrinsic.Control.If(V.DataTable.dtJ52.RowCount,=,0)
+				F.Data.DataTable.AddRow("dtJ52","PART",V.Local.sPart,"LOCATION",V.Local.sLocation,"DATE_HISTORY",V.Local.sDateHistory,"OLD_INV_COST",V.Local.fOldInvCost,"NEW_INV_COST",V.Local.fNewInvCost,"COST",V.Local.fCost)
+				F.Data.DataTable.SaveToDB("dtJ52","con","GAB_4435_J52_CHECK","PART*!*LOCATION")
+				F.Data.DataTable.Close("dtJ52")
+			F.Intrinsic.Control.Else
+				F.Data.DataTable.SetValue("dtJ52",-1,"DATE_HISTORY",V.Local.sDateHistory,"OLD_INV_COST",V.Local.fOldInvCost,"NEW_INV_COST",V.Local.fNewInvCost,"COST",V.Local.fCost)
+				F.Data.DataTable.SaveToDB("dtJ52","con","GAB_4435_J52_CHECK","PART*!*LOCATION")
+				F.Data.DataTable.Close("dtJ52")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+		F.Data.DataTable.Close("dtHist")
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Data.DataTable.Close("dtParts")
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.UI.ChangeWaitStatus("Complete",V.Local.iCnt,0,V.Local.iPercentage)
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.Control.If(V.Ambient.IsInTaskScheduler,<>,True)
+	F.Intrinsic.String.Build("J52 Check Complete.{0}{0}Table: GAB_4435_J52_CHECK",V.Ambient.NewLine,V.Local.sMsg)
+	F.Intrinsic.UI.Msgbox(V.Local.sMsg,"Complete")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: GAB_4435_J52_Check.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.CreateTable.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+'Check for table and Create table
+
+V.Local.bExists.Declare(Boolean)
+
+F.ODBC.Connection!con.TableExists("GAB_4435_J52_CHECK",V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists,=,False)
+	F.ODBC.Connection!con.Execute("CREATE TABLE GAB_4435_J52_CHECK(PART CHAR(20) NOT NULL,LOCATION CHAR(2) NOT NULL,DATE_HISTORY DATE NOT NULL,OLD_INV_COST NUMERIC(16,6) NOT NULL,NEW_INV_COST NUMERIC(16,6) NOT NULL,COST NUMERIC(16,6) NOT NULL);")
+	F.ODBC.Connection!con.Execute("CREATE INDEX GAB_4435_J52_CHECK01 ON GAB_4435_J52_CHECK(PART);")
+	F.ODBC.Connection!con.Execute("CREATE INDEX GAB_4435_J52_CHECK02 ON GAB_4435_J52_CHECK(LOCATION);")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: GAB_4435_J52_Check.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.CreateTable.End
+
+Program.Sub.Comments.Start
+${$0$}$GAB_Tools_J52_Check$}$AGV$}$08/13/2015$}$False
+Program.Sub.Comments.End
+

@@ -1,0 +1,98 @@
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+	
+'Hooks: 16504 (JB0052GI-Post-Save), 43310 (JB0052S-Process)
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,"16504")
+	F.Intrinsic.Control.CallSub(Wiptofg)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,"43310")
+	F.Intrinsic.Control.CallSub(Autowiptofg)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: GAB_4435_J52_Last.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.WipToFG.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+V.Local.sSQL.Declare
+V.Local.sPart.Declare
+V.Local.dDate.Declare
+
+F.Intrinsic.String.GSSPartString(V.Passed.000009,V.Passed.000030,V.Local.sPart)
+F.Intrinsic.Date.ConvertDString(V.Passed.000007,"MMDDYYYY",V.Local.dDate)
+
+F.Intrinsic.String.Build("SELECT * FROM GAB_4435_J52_CHECK WHERE PART = '{0}' AND LOCATION = '{1}';",V.Local.sPart,V.Passed.000010,V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRW("rstJ52",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstJ52.EOF)
+		F.ODBC.con!rstJ52.AddNew
+	F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstJ52.Set!PART(V.Local.sPart)
+		F.ODBC.con!rstJ52.Set!LOCATION(V.Passed.000010)
+		F.ODBC.con!rstJ52.Set!DATE_HISTORY(V.Local.dDate.PervasiveDate)
+		F.ODBC.con!rstJ52.Set!OLD_INV_COST(0.000000)
+		F.ODBC.con!rstJ52.Set!NEW_INV_COST(0.000000)
+		F.ODBC.con!rstJ52.Set!COST(0.000000)
+	F.ODBC.con!rstJ52.Update
+F.ODBC.con!rstJ52.Close
+
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End 
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: GAB_4435_J52_Last.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.WipToFG.End
+
+Program.Sub.AutoWipToFG.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare
+
+V.Local.sSQL.Declare
+V.Local.dDate.Declare
+
+V.Local.dDate.Set(V.Ambient.Date)
+
+F.Intrinsic.String.Build("SELECT * FROM GAB_4435_J52_CHECK WHERE PART = '{0}' AND LOCATION = '{1}';",V.Passed.PART,V.Passed.LOCATION,V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRW("rstJ52",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstJ52.EOF)
+		F.ODBC.con!rstJ52.AddNew
+	F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstJ52.Set!PART(V.Passed.PART)
+		F.ODBC.con!rstJ52.Set!LOCATION(V.Passed.LOCATION)
+		F.ODBC.con!rstJ52.Set!DATE_HISTORY(V.Local.dDate.PervasiveDate)
+		F.ODBC.con!rstJ52.Set!OLD_INV_COST(0.000000)
+		F.ODBC.con!rstJ52.Set!NEW_INV_COST(0.000000)
+		F.ODBC.con!rstJ52.Set!COST(0.000000)
+	F.ODBC.con!rstJ52.Update
+F.ODBC.con!rstJ52.Close
+
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End 
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: GAB_4435_J52_Last.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End 
+F.Intrinsic.Control.EndTry
+Program.Sub.AutoWipToFG.End
+
+Program.Sub.Comments.Start
+${$0$}$GAB_Tools_J52_Last$}$AGV$}$12/22/2016$}$False
+Program.Sub.Comments.End
+
